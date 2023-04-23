@@ -1,0 +1,9 @@
+__pycache__/
+apicache-py3/
+config.py
+pywikibot*.lwp
+replica.my.cnf
+throttle.ctrl
+user-config.py
+user-password.py
+userdb.my.cnf
