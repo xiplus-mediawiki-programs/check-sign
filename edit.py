@@ -77,12 +77,13 @@ def check_sign_problems(sign, username):
         name = name.replace('_', ' ').strip()
         name = name[0].upper() + name[1:]
         names_in_sign.add(name)
+    other_names_in_sign = names_in_sign - {username}
     if len(names_in_sign) > 1:
-        sign_errors.add((3, 'ambiguous', ','.join(sorted(names_in_sign))))
+        sign_errors.add((3, 'ambiguous', '、'.join(sorted(other_names_in_sign))))
     elif len(names_in_sign) == 0:
         sign_errors.add((3, 'nolink', None))
     elif username not in names_in_sign:
-        sign_errors.add((3, 'otherlink', ','.join(sorted(names_in_sign))))
+        sign_errors.add((3, 'otherlink', '、'.join(sorted(other_names_in_sign))))
 
     return sign_errors, hide_sign
 
@@ -122,16 +123,20 @@ def format_sign_errors_output(sign_errors):
     return '、'.join(result)
 
 
-def get_warn_templates(sign_errors):
+def get_warn_templates(sign_errors, username):
     templates = set()
     for row in sign_errors:
         error_type = row[1]
+        error_param = row[2]
+
         if error_type in ['template', 'templatestyles']:
             templates.add('Uw-sign-notemplate')
         elif error_type == 'link':
             templates.add('Uw-sign-external-link')
         elif error_type == 'sign-too-long':
             templates.add('Uw-sign-toolong')
+        elif error_type == 'ambiguous' and not re.search(r'bot$', username):
+            templates.add('Uw-sign-link-ambiguous|1=' + error_param)
         elif error_type == 'nolink':
             templates.add('Uw-signlink')
         elif error_type == 'otherlink':
@@ -157,6 +162,10 @@ def format_sign_errors_report(sign_errors):
             result.append('[[Wikipedia:签名#外部链接与模板|包含外部連結]]')
         elif error_type == 'sign-too-long':
             result.append('[[Wikipedia:签名#长度|簽名過長（{}位元組）]]'.format(error_param))
+        elif error_type == 'ambiguous':
+            result.append('[[Wikipedia:签名#假冒签名|假冒簽名（簽名連結到其他人的用戶頁、討論頁或貢獻頁）]]')
+        elif error_type == 'nolink':
+            result.append('[[Wikipedia:签名#签名必须包含的部分|簽名未連結到用戶頁、討論頁或貢獻頁]]')
         elif error_type == 'otherlink':
             result.append('[[Wikipedia:签名#假冒签名|假冒簽名（簽名連結到其他人的用戶頁、討論頁或貢獻頁）]]')
 
@@ -404,7 +413,7 @@ def main(args):
             error_text = format_sign_errors_output(error)
             output_text += OUTPUT_ROW.format(username, check_link, sign, error_text)
 
-            warn_templates = get_warn_templates(error)
+            warn_templates = get_warn_templates(error, username)
             if len(warn_templates) > 0:
                 warned_users.add(username)
                 warn_user(
