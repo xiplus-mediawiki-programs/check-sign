@@ -383,6 +383,9 @@ def main(args):
         username = row[1].decode()
         sign = row[2].decode()
 
+        if re.search(r'^(Former|Renamed|Vanished|Deleted) (user|account) ', username, flags=re.I):
+            continue
+
         user_ids[username] = user_id
         raw_signs[username] = sign
         usernames.append(username)
