@@ -174,8 +174,8 @@ def format_sign_errors_report(sign_errors):
 
 def parse_signs(signs):
     text = ''
-    for username, sign in signs.items():
-        text += '<!-- {0} start -->{1}<!-- {0} end -->\n'.format(username, sign)
+    for userid, sign in signs.items():
+        text += '<!-- {0} start -->{1}<!-- {0} end -->\n'.format(userid, sign)
 
     with open(os.path.join(BASEDIR, 'raw_signs.txt'), 'w', encoding='utf8') as f:
         f.write(text)
@@ -191,12 +191,12 @@ def parse_signs(signs):
     parsed_text = data['parse']['text']['*']
 
     parsed_signs = {}
-    for username in signs:
-        flag = '<!-- {} start -->'.format(username)
+    for userid in signs:
+        flag = '<!-- {} start -->'.format(userid)
         idx1 = parsed_text.index(flag)
-        idx2 = parsed_text.index('<!-- {} end -->'.format(username))
+        idx2 = parsed_text.index('<!-- {} end -->'.format(userid))
         parsed_sign = parsed_text[idx1 + len(flag):idx2]
-        parsed_signs[username] = parsed_sign
+        parsed_signs[userid] = parsed_sign
 
     return parsed_signs
 
@@ -204,14 +204,14 @@ def parse_signs(signs):
 def lint_signs(signs):
     text = ''
     signs_idx = []
-    usernames = []
+    userids = []
     sign_errors = {}
-    for username, sign in signs.items():
+    for userid, sign in signs.items():
         cleaned_sign = re.sub(r'[^\x00-\x7F]', 'C', sign)
-        text += '<div id="sign-{}">{}</div>\n'.format(username, cleaned_sign)
+        text += '<div id="sign-{}">{}</div>\n'.format(userid, cleaned_sign)
         signs_idx.append(len(text))
-        usernames.append(username)
-        sign_errors[username] = set()
+        userids.append(userid)
+        sign_errors[userid] = set()
 
     with open(os.path.join(BASEDIR, 'parsed_signs.txt'), 'w', encoding='utf8') as f:
         f.write(text)
@@ -223,12 +223,20 @@ def lint_signs(signs):
         'Accept': 'application/json',
     }).json()
 
+    with open(os.path.join(BASEDIR, 'lint.json'), 'w', encoding='utf8') as f:
+        json.dump(data, f, indent=4)
+
+    temp = []
     for row in data:
         idx = bisect.bisect_left(signs_idx, row['dsr'][0])
-        username = usernames[idx]
+        userid = userids[idx]
         lint_type = row['type']
         lint_tag = row['params']['name']
-        sign_errors[username].add((3, lint_type, lint_tag))
+        sign_errors[userid].add((3, lint_type, lint_tag))
+        temp.append([userids[idx], text[row['dsr'][0]:row['dsr'][1]], row['dsr'], lint_type, lint_tag])
+
+    with open(os.path.join(BASEDIR, 'lint-res.json'), 'w', encoding='utf8') as f:
+        json.dump(temp, f, indent=4)
 
     return sign_errors
 
@@ -375,61 +383,61 @@ def main(args):
         cur.execute(QUERY_USER_WITH_SIGN)
         res = cur.fetchall()
 
-    user_ids = {}
+    user_ids = []
     raw_signs = {}
-    usernames = []
+    usernames = {}
     for row in res:
-        user_id = row[0]
+        userid = row[0]
         username = row[1].decode()
         sign = row[2].decode()
 
         if re.search(r'^(Former|Renamed|Vanished|Deleted) (user|account) ', username, flags=re.I):
             continue
 
-        user_ids[username] = user_id
-        raw_signs[username] = sign
-        usernames.append(username)
+        user_ids.append(userid)
+        raw_signs[userid] = sign
+        usernames[userid] = username
 
-    print('Process {} users'.format(len(usernames)))
+    print('Process {} users'.format(len(user_ids)))
 
     parsed_signs = parse_signs(raw_signs)
 
     sign_errors = {}
     hide_sign = {}
-    for username, sign in parsed_signs.items():
-        sign_errors[username], hide_sign[username] = check_sign_problems(sign, username)
+    for userid, sign in parsed_signs.items():
+        sign_errors[userid], hide_sign[userid] = check_sign_problems(sign, usernames[userid])
 
     lint_sign_errors = lint_signs(parsed_signs)
-    for username, errors in lint_sign_errors.items():
-        sign_errors[username].update(errors)
+    for userid, errors in lint_sign_errors.items():
+        sign_errors[userid].update(errors)
 
     output_text = OUTPUT_HEADER
     warned_users = set()
     legal_users = set()
-    for username in sorted(usernames):
-        error = sign_errors[username]
+    for userid in sorted(usernames):
+        error = sign_errors[userid]
         if len(error) > 0:
-            check_link = '[{} check]'.format(get_sign_url(username))
+            check_link = '[{} check]'.format(get_sign_url(usernames[userid]))
             sign = ''
-            if not hide_sign[username]:
-                sign = parsed_signs[username]
+            if not hide_sign[userid]:
+                sign = parsed_signs[userid]
             error_text = format_sign_errors_output(error)
-            output_text += OUTPUT_ROW.format(username, check_link, sign, error_text)
+            output_text += OUTPUT_ROW.format(usernames[userid], check_link, sign, error_text)
 
-            warn_templates = get_warn_templates(error, username)
+            warn_templates = get_warn_templates(error, usernames[userid])
             if len(warn_templates) > 0:
-                warned_users.add(username)
+                warned_users.add(userid)
                 warn_user(
                     site=site,
-                    username=username,
-                    sign=parsed_signs[username],
+                    username=usernames[userid],
+                    sign=parsed_signs[userid],
                     sign_error=error,
                     warn_templates=warn_templates,
                     cfg=cfg,
                     args=args,
                 )
         else:
-            legal_users.add(username)
+            legal_users.add(userid)
 
     output_text += '|}'
 
