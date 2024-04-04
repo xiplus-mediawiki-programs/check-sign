@@ -73,7 +73,11 @@ def check_sign_problems(sign, username):
         sign_errors.add((1, 'sign-too-long', sign_len))
 
     names_in_sign = set()
-    for name in re.findall(r'\[\[\s*:?(?:(?:User(?:[ _]talk)?|U|UT|用户|用戶|使用者|用戶對話|用戶討論|用户对话|用户讨论|使用者討論)\s*:|(?:Special|特殊)\s*:(?:(?:Contributions|Contribs)|(?:用户|用戶|使用者)?(?:贡献|貢獻))/)([^\]/|#]+?)\s*[\]/|#]', sign, re.I):
+    for name in re.findall(r'\[\[\s*:?(?:User(?:[ _]talk)?|U|UT|用户|用戶|使用者|用戶對話|用戶討論|用户对话|用户讨论|使用者討論)\s*:\s*([^\]/|#]+?)\s*[\]|#]', sign, re.I):
+        name = name.replace('_', ' ').strip()
+        name = name[0].upper() + name[1:]
+        names_in_sign.add(name)
+    for name in re.findall(r'\[\[\s*:?(?:Special|特殊)\s*:(?:(?:Contributions|Contribs)|(?:用户|用戶|使用者)?(?:贡献|貢獻))/([^\]/|#]+?)\s*[\]/|#]', sign, re.I):
         name = name.replace('_', ' ').strip()
         name = name[0].upper() + name[1:]
         names_in_sign.add(name)
@@ -258,6 +262,8 @@ def get_sign_url(username):
 
 def warn_user(site, username, sign, sign_error, warn_templates, cfg, args):
     print('warn', username, warn_templates)
+    if args.no_warn:
+        return
     TALK_NAMESPACES = list(filter(lambda v: v >= 0 and v % 2 == 1 or v == 4, site.namespaces))
     TIMELIMIT = datetime.now() - timedelta(days=7)
 
@@ -466,7 +472,8 @@ if __name__ == '__main__':
     print(time.ctime())
     parser = argparse.ArgumentParser()
     parser.add_argument('--confirm', action='store_true')
-    parser.set_defaults(confirm=False)
+    parser.add_argument('--no-warn', action='store_true')
+    parser.set_defaults(confirm=False, no_warn=False)
     args = parser.parse_args()
 
     main(args)
