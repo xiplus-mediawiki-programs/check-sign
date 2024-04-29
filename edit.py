@@ -133,7 +133,9 @@ def get_warn_templates(sign_errors, username):
         error_type = row[1]
         error_param = row[2]
 
-        if error_type in ['template', 'templatestyles']:
+        if error_type == 'file':
+            templates.add('Uw-sign-file')
+        elif error_type in ['template', 'templatestyles']:
             templates.add('Uw-sign-notemplate')
         elif error_type == 'link':
             templates.add('Uw-sign-external-link')
