@@ -237,7 +237,10 @@ def lint_signs(signs):
         idx = bisect.bisect_left(signs_idx, row['dsr'][0])
         userid = userids[idx]
         lint_type = row['type']
-        lint_tag = row['params']['name']
+        if lint_type == 'night-mode-unaware-background-color':
+            lint_tag = None
+        else:
+            lint_tag = row['params']['name']
         sign_errors[userid].add((3, lint_type, lint_tag))
         temp.append([userids[idx], text[row['dsr'][0]:row['dsr'][1]], row['dsr'], lint_type, lint_tag])
 
