@@ -77,7 +77,7 @@ def check_sign_problems(sign, username):
         name = name.replace('_', ' ').strip()
         name = name[0].upper() + name[1:]
         names_in_sign.add(name)
-    for name in re.findall(r'\[\[\s*:?(?:Special|特殊)\s*:(?:(?:Contributions|Contribs)|(?:用户|用戶|使用者)?(?:贡献|貢獻))/([^\]/|#]+?)\s*[\]/|#]', sign, re.I):
+    for name in re.findall(r'\[\[\s*:?(?:Special|特殊)\s*:(?:(?:Contributions|Contribs)|(?:用户|用戶|使用者)?(?:贡献|貢獻))/(?:\s*User:\s*)?([^\]/|#]+?)\s*[\]/|#]', sign, re.I):
         name = name.replace('_', ' ').strip()
         name = name[0].upper() + name[1:]
         names_in_sign.add(name)
