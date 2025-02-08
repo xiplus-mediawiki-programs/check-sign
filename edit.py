@@ -82,7 +82,7 @@ def check_sign_problems(sign, username):
         name = name[0].upper() + name[1:]
         names_in_sign.add(name)
     other_names_in_sign = names_in_sign - {username}
-    if len(names_in_sign) > 1:
+    if len(names_in_sign) > 1 and not re.search(r'bot$', username):
         sign_errors.add((3, 'ambiguous', '、'.join(sorted(other_names_in_sign))))
     elif len(names_in_sign) == 0:
         sign_errors.add((3, 'nolink', None))
