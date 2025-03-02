@@ -4,6 +4,7 @@
 import argparse
 import bisect
 import configparser
+import html
 import json
 import os
 import re
@@ -53,6 +54,12 @@ OUTPUT_ROW = '''|-
 '''
 
 
+def nomalize_name(name):
+    name = name.replace('_', ' ').strip()
+    name = name[0].upper() + name[1:]
+    return name
+
+
 def check_sign_problems(sign, username):
     sign_errors = set()
     hide_sign = False
@@ -73,14 +80,11 @@ def check_sign_problems(sign, username):
         sign_errors.add((1, 'sign-too-long', sign_len))
 
     names_in_sign = set()
+    sign = html.unescape(sign)
     for name in re.findall(r'\[\[\s*:?(?:User(?:[ _]talk)?|U|UT|用户|用戶|使用者|用戶對話|用戶討論|用户对话|用户讨论|使用者討論)\s*:\s*([^\]/|#]+?)\s*[\]|#]', sign, re.I):
-        name = name.replace('_', ' ').strip()
-        name = name[0].upper() + name[1:]
-        names_in_sign.add(name)
+        names_in_sign.add(nomalize_name(name))
     for name in re.findall(r'\[\[\s*:?(?:Special|特殊)\s*:(?:(?:Contributions|Contribs)|(?:用户|用戶|使用者)?(?:贡献|貢獻))/(?:\s*User:\s*)?([^\]/|#]+?)\s*[\]/|#]', sign, re.I):
-        name = name.replace('_', ' ').strip()
-        name = name[0].upper() + name[1:]
-        names_in_sign.add(name)
+        names_in_sign.add(nomalize_name(name))
     other_names_in_sign = names_in_sign - {username}
     if len(names_in_sign) > 1 and not re.search(r'bot$', username):
         sign_errors.add((3, 'ambiguous', '、'.join(sorted(other_names_in_sign))))
