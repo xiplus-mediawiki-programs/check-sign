@@ -3,7 +3,6 @@
 
 import argparse
 import bisect
-import configparser
 import html
 import json
 import os
@@ -22,7 +21,8 @@ from dbmodels import User
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
-from config import CONFIG_PAGE_NAME, REPLICA_CONFIG_PATH, USERDB_CONFIG_PATH
+from config import (CONFIG_PAGE_NAME, REPLICA_CONFIG_PATH, REPLICA_DB, REPLICA_HOST,
+                    USERDB_DB, USERDB_HOST)
 
 QUERY_USER_WITH_SIGN = '''
 SELECT actor_user, actor_name, up2.up_value AS `nickname`
@@ -254,14 +254,9 @@ def lint_signs(signs):
     return sign_errors
 
 
-reader = configparser.ConfigParser()
-reader.read(USERDB_CONFIG_PATH)
-USERDB_HOST = reader.get('client', 'host')
-USERDB_PORT = reader.get('client', 'port')
-
 engine = create_engine(
-    f'mysql+pymysql://{USERDB_HOST}:{USERDB_PORT}',
-    connect_args={'read_default_file': USERDB_CONFIG_PATH},
+    f'mysql+pymysql://{USERDB_HOST}/{USERDB_DB}',
+    connect_args={'read_default_file': REPLICA_CONFIG_PATH},
 )
 
 
@@ -392,7 +387,7 @@ def main(args):
         print('disabled')
         exit()
 
-    conn = pymysql.connect(read_default_file=REPLICA_CONFIG_PATH)
+    conn = pymysql.connect(host=REPLICA_HOST, database=REPLICA_DB, read_default_file=REPLICA_CONFIG_PATH)
 
     with conn.cursor() as cur:
         cur.execute(QUERY_USER_WITH_SIGN)

@@ -17,18 +17,11 @@ class User(Base):
 
 
 if __name__ == '__main__':
-    import configparser
-
-    from config import USERDB_CONFIG_PATH
-
-    reader = configparser.ConfigParser()
-    reader.read(USERDB_CONFIG_PATH)
-    USERDB_HOST = reader.get('client', 'host')
-    USERDB_PORT = reader.get('client', 'port')
+    from config import REPLICA_CONFIG_PATH, USERDB_DB, USERDB_HOST
 
     engine = create_engine(
-        f'mysql+pymysql://{USERDB_HOST}:{USERDB_PORT}',
-        connect_args={'read_default_file': USERDB_CONFIG_PATH},
+        f'mysql+pymysql://{USERDB_HOST}/{USERDB_DB}',
+        connect_args={'read_default_file': REPLICA_CONFIG_PATH},
     )
 
     Base.metadata.create_all(engine)
