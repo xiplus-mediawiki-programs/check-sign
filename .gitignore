@@ -1,7 +1,12 @@
 __pycache__/
+apicache/
 apicache-py3/
 config.py
+lint-res.json
+lint.json
+parsed_signs.txt
 pywikibot*.lwp
+raw_signs.txt
 replica.my.cnf
 throttle.ctrl
 user-config.py
