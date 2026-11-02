@@ -15,7 +15,6 @@ import pymysql
 BASEDIR = os.path.dirname(os.path.realpath(__file__))
 os.environ['PYWIKIBOT_DIR'] = BASEDIR
 import pywikibot
-import pywikibot.flow
 import requests
 from dbmodels import User
 from sqlalchemy import create_engine
@@ -345,29 +344,18 @@ def warn_user(site, username, sign, sign_error, warn_templates, cfg, args):
             title += '（第{}次）'.format(user.warn_count)
 
         talk_page = pywikibot.Page(site, 'User talk:' + username)
-        if talk_page.is_flow_page():
-            board = pywikibot.flow.Board(talk_page)
-            content = ''
-            for template in warn_templates:
-                content += '{{subst:' + template + '}}\n\n'
-            content += cfg['notice_suffix']
-            if args.confirm:
-                print('\tflow {}: {}'.format(title, content))
-                input('Save?')
-            board.new_topic(title, content)
-        else:
-            new_text = talk_page.text
-            if new_text != '':
-                new_text += '\n\n'
-            new_text += '== {} ==\n'.format(title)
-            for template in warn_templates:
-                new_text += '{{subst:' + template + '}}\n\n'
-            new_text += cfg['notice_suffix'] + '--~~~~'
-            if args.confirm:
-                pywikibot.showDiff(talk_page.text, new_text)
-                input('Save?')
-            talk_page.text = new_text
-            talk_page.save(summary=cfg['notice_summary'], minor=False)
+        new_text = talk_page.text
+        if new_text != '':
+            new_text += '\n\n'
+        new_text += '== {} ==\n'.format(title)
+        for template in warn_templates:
+            new_text += '{{subst:' + template + '}}\n\n'
+        new_text += cfg['notice_suffix'] + '--~~~~'
+        if args.confirm:
+            pywikibot.showDiff(talk_page.text, new_text)
+            input('Save?')
+        talk_page.text = new_text
+        talk_page.save(summary=cfg['notice_summary'], minor=False)
 
     user.last_warn = datetime.now()
     session.commit()
